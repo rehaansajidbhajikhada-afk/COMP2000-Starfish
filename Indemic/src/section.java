@@ -122,6 +122,9 @@ public class section {
 
         // Move entities randomly to adjacent empty cells
         for (Entity entity : allEntities) {
+            if (entity.getState() == cellState.DEAD) {
+               continue;
+}
             int currentRow = entity.getGridY();
             int currentCol = entity.getGridX();
 
