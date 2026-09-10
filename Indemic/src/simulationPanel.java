@@ -74,6 +74,10 @@ public class simulationPanel extends JPanel {
         g.fillRect(620, 900, 15, 15);
         g.setColor(Color.BLACK);
         g.drawString("Defender", 645, 912);
+        g.setColor(Color.BLACK);
+        g.fillRect(760, 900, 15, 15);
+        g.setColor(Color.BLACK);
+        g.drawString("Dead", 785, 912);
 
         if (!world.hasStarted()) {
             g.setColor(new Color(255, 255, 255, 210));
@@ -115,11 +119,14 @@ public class simulationPanel extends JPanel {
                 int infectedCount = gridCell.getInfectedCount();
                 int enhancedHealthyCount = gridCell.getEnhancedHealthyCount();
                 int defenderCount = gridCell.getDefenderCount();
+                int deadCount = gridCell.getDeadCount();
                 int totalCount = gridCell.getEntityCount();
 
                 if (totalCount == 0) {
                     g.setColor(new Color(240, 240, 240)); // Light gray for empty
-                } else if (defenderCount > 0) {
+                }else if (deadCount > 0) {
+                    g.setColor(Color.BLACK);
+                 } else if (defenderCount > 0) {
                     g.setColor(new Color(120, 180, 255)); // Blue for defenders
                 } else if (enhancedHealthyCount > 0) {
                     g.setColor(new Color(70, 150, 70)); // Dark green for enhanced healthy
@@ -128,9 +135,7 @@ public class simulationPanel extends JPanel {
                 } else if (healthyCount > 0) {
                     g.setColor(new Color(200, 255, 200)); // Light green for healthy majority
                 }
-
                 g.fillRect(x, y, cellWidth, cellHeight);
-
                 // Draw cell border (thin)
                 g.setColor(Color.BLACK);
                 g.setStroke(new BasicStroke(1));

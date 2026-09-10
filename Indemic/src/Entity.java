@@ -1,5 +1,6 @@
 public class Entity {
     private cellState state;
+    private int recoveryCount;
     private int gridX; // Grid position
     private int gridY; // Grid position
 
@@ -7,6 +8,7 @@ public class Entity {
         this.gridX = gridX;
         this.gridY = gridY;
         this.state = state;
+        this.recoveryCount = 0;
     }
 
     public void infect() {
@@ -25,15 +27,24 @@ public class Entity {
         this.state = state;
     }
 
-    public void cure() {
-        if (state == cellState.INFECTED) {
+  public void cure() {
+    if (state == cellState.INFECTED) {
+
+        if (recoveryCount >= 2) {
+            state = cellState.DEAD;
+        } else {
             state = cellState.HEALTHY;
+            recoveryCount++;
         }
     }
+}
 
     public cellState getState() {
         return state;
     }
+    public int getRecoveryCount() {
+    return recoveryCount;
+}
 
     public int getGridX() {
         return gridX;

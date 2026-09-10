@@ -67,6 +67,17 @@ public class GridCell {
         }
         return count;
     }
+    public int getDeadCount() {
+    int count = 0;
+
+    for (Entity entity : entities) {
+        if (entity.getState() == cellState.DEAD) {
+            count++;
+        }
+    }
+
+    return count;
+}
 
     public int getGridX() {
         return gridX;
