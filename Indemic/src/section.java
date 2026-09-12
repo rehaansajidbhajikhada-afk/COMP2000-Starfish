@@ -336,4 +336,15 @@ public class section {
         }
         return count;
     }
+    public int getTotalDeadCount() {
+    int count = 0;
+
+    for (int row = 0; row < gridRows; row++) {
+        for (int col = 0; col < gridCols; col++) {
+            count += grid[row][col].getDeadCount();
+        }
+    }
+
+    return count;
+}
 }

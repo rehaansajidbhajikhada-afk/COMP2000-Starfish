@@ -8,9 +8,13 @@ import javax.swing.JPanel;
 
 public class simulationPanel extends JPanel {
     private world world;
+    private Upgrade infectivityUpgrade;
+    private Upgrade transmissionUpgrade;
 
     public simulationPanel(world world) {
         this.world = world;
+        this.infectivityUpgrade = new InfectivityUpgrade();
+        this.transmissionUpgrade = new TransmissionUpgrade();
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
@@ -47,15 +51,16 @@ public class simulationPanel extends JPanel {
             world.selectStartingSection(row, col);
         } else if (y >= 850 && y <= 900) {
             if (x >= 10 && x <= 210) {
-                world.upgradeInfectivity();
+                infectivityUpgrade.apply(world);
             } else if (x >= 220 && x <= 420) {
-                world.upgradeTransmission();
+                transmissionUpgrade.apply(world);
             }
         }
         repaint();
     }
 
     private void drawHud(Graphics2D g) {
+        g.fillRect(0, 820, getWidth(), 130);
         g.setColor(new Color(250, 250, 250));
         g.fillRect(0, 820, getWidth(), 130);
         g.setColor(Color.BLACK);
@@ -124,7 +129,7 @@ public class simulationPanel extends JPanel {
 
                 if (totalCount == 0) {
                     g.setColor(new Color(240, 240, 240)); // Light gray for empty
-                }else if (deadCount > 0) {
+                } else if (deadCount > 0) {
                     g.setColor(Color.BLACK);
                  } else if (defenderCount > 0) {
                     g.setColor(new Color(120, 180, 255)); // Blue for defenders
@@ -155,12 +160,13 @@ public class simulationPanel extends JPanel {
 
         // Draw section statistics
         int statsX = sectionX + 5;
-        int statsY = sectionY + sectionHeight + 15;
+        int statsY = sectionY  + 15;
 
         g.setColor(Color.BLACK);
         g.drawString("Healthy: " + section.getTotalHealthyCount(), statsX, statsY);
-        g.drawString("Infected: " + section.getTotalInfectedCount(), statsX, statsY + 15);
-        g.drawString("Enhanced healthy: " + section.getTotalEnhancedHealthyCount(), statsX, statsY + 30);
-        g.drawString("Defenders: " + section.getTotalDefenderCount(), statsX, statsY + 45);
+        g.drawString("Infected: " + section.getTotalInfectedCount(), statsX, statsY + 11);
+        g.drawString("Enhanced healthy: " + section.getTotalEnhancedHealthyCount(), statsX, statsY + 22);
+        g.drawString("Defenders: " + section.getTotalDefenderCount(), statsX, statsY + 33);
+        g.drawString("Dead: " + section.getTotalDeadCount(), statsX, statsY + 44);
     }
 }
