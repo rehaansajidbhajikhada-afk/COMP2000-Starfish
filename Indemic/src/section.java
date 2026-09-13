@@ -286,6 +286,23 @@ public class section {
     public double getHeight() {
         return height;
     }
+    public boolean exposeCell(int row, int col) {
+
+    if (row < 0 || row >= gridRows || col < 0 || col >= gridCols) {
+        return false;
+    }
+
+    GridCell gridCell = grid[row][col];
+
+    for (Entity entity : gridCell.getEntities()) {
+        if (entity.getState() == cellState.HEALTHY) {
+            entity.infect();
+            return true;
+        }
+    }
+
+    return false;
+}
 
     public int getTotalEntityCount() {
         int count = 0;

@@ -37,7 +37,24 @@ public class world {
         sectionGrid[1][1] = s11;
         
     }
+    public boolean exposeCell(int x, int y) {
+    int sectionCol = x / 600;
+    int sectionRow = y / 400;
 
+    if (sectionRow < 0 || sectionRow >= 2 || sectionCol < 0 || sectionCol >= 2) {
+        return false;
+    }
+
+    section selectedSection = sectionGrid[sectionRow][sectionCol];
+
+    int localX = x - sectionCol * 600;
+    int localY = y - sectionRow * 400;
+
+    int cellCol = localX / 120;
+    int cellRow = localY / 80;
+
+    return selectedSection.exposeCell(cellRow, cellCol);
+}
     public void tick() {
         if (startingSection == null) {
             return;

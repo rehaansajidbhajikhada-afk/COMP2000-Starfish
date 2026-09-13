@@ -2,6 +2,8 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JPanel;
@@ -10,6 +12,7 @@ public class simulationPanel extends JPanel {
     private world world;
     private Upgrade infectivityUpgrade;
     private Upgrade transmissionUpgrade;
+    private boolean exposureMode = false;
 
     public simulationPanel(world world) {
         this.world = world;
@@ -18,9 +21,21 @@ public class simulationPanel extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
+                    requestFocusInWindow();
                 handleClick(event.getX(), event.getY());
             }
         });
+        setFocusable(true);
+
+addKeyListener(new KeyAdapter() {
+    @Override
+    public void keyPressed(KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.VK_E) {
+            exposureMode = !exposureMode;
+            repaint();
+        }
+    }
+});
     }
 
     int totalEntities;
@@ -45,6 +60,11 @@ public class simulationPanel extends JPanel {
     }
 
     private void handleClick(int x, int y) {
+        if (exposureMode && world.hasStarted() && y < 800) {
+        world.exposeCell(x, y);
+        repaint();
+        return;
+        }
         if (!world.hasStarted() && x < 1200 && y < 800) {
             int col = x / 600;
             int row = y / 400;
@@ -67,6 +87,11 @@ public class simulationPanel extends JPanel {
         g.drawString("DNA points: " + world.getDnaPoints(), 10, 840);
         g.drawString("Infectivity: " + (int) (world.getInfectionChance() * 100) + "%", 150, 840);
         g.drawString("Section spread threshold: " + world.getInfectionThreshold(), 285, 840);
+        if (exposureMode) {
+        g.drawString("Exposure Mode: ON - Click a healthy cell to infect it", 850, 840);
+        } else {
+       g.drawString("Exposure Mode: OFF - Press E to activate", 850, 840);
+       }
 
         drawButton(g, 10, 850, 200, 50, "Upgrade Infectivity");
         drawButton(g, 220, 850, 200, 50, "Upgrade Transmission");
