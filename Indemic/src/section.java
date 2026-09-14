@@ -3,7 +3,7 @@ import java.util.List;
 import java.util.Random;
 
 public class section {
-    private GridCell[][] grid;
+    private GridCell<Entity>[][] grid;
     private double x;
     private double y;
     private double width;
@@ -13,7 +13,8 @@ public class section {
     private double infectionChance = 0.3;
     private int ticks;
     private Random random = new Random();
-
+    
+@SuppressWarnings("unchecked")
     public section(double x, double y, double width, double height, int gridRows, int gridCols, int initialEntityCount) {
         this.x = x;
         this.y = y;
@@ -26,7 +27,7 @@ public class section {
         grid = new GridCell[gridRows][gridCols];
         for (int row = 0; row < gridRows; row++) {
             for (int col = 0; col < gridCols; col++) {
-                grid[row][col] = new GridCell(col, row);
+                grid[row][col] = new GridCell<>(col, row);
             }
         }
 
@@ -166,7 +167,7 @@ public class section {
         // Handle infection spread to adjacent cells
         for (int row = 0; row < gridRows; row++) {
             for (int col = 0; col < gridCols; col++) {
-                GridCell cell = grid[row][col];
+                GridCell <Entity>cell = grid[row][col];
                 if (cell.getInfectedCount() > 0) {
                     // Infect healthy entities in adjacent cells
                     for (int dr = -1; dr <= 1; dr++) {
@@ -177,7 +178,7 @@ public class section {
                             int adjCol = col + dc;
                             
                             if (adjRow >= 0 && adjRow < gridRows && adjCol >= 0 && adjCol < gridCols) {
-                                GridCell adjCell = grid[adjRow][adjCol];
+                                GridCell<Entity> adjCell = grid[adjRow][adjCol];
                                 if (adjCell.getHealthyCount() > 0) {
                                     if (random.nextDouble() < infectionChance) {
                                         adjCell.getEntities().get(0).infect();
@@ -212,7 +213,7 @@ public class section {
             return;
         }
 
-        List<GridCell> healthyCells = new ArrayList<>();
+        List<GridCell<Entity>> healthyCells = new ArrayList<>();
         for (int row = 0; row < gridRows; row++) {
             for (int col = 0; col < gridCols; col++) {
                 if (grid[row][col].getHealthyCount() > 0) {
@@ -222,7 +223,7 @@ public class section {
         }
 
         if (!healthyCells.isEmpty()) {
-            GridCell cell = healthyCells.get(random.nextInt(healthyCells.size()));
+            GridCell<Entity> cell = healthyCells.get(random.nextInt(healthyCells.size()));
             Entity defender = cell.getEntities().get(0);
             defender.setState(cellState.DEFENDER);
         }
@@ -256,7 +257,7 @@ public class section {
         this.infectionChance = infectionChance;
     }
 
-    public GridCell getGridCell(int row, int col) {
+    public GridCell<Entity> getGridCell(int row, int col) {
         if (row >= 0 && row < gridRows && col >= 0 && col < gridCols) {
             return grid[row][col];
         }
@@ -292,7 +293,7 @@ public class section {
         return false;
     }
 
-    GridCell gridCell = grid[row][col];
+    GridCell<Entity> gridCell = grid[row][col];
 
     for (Entity entity : gridCell.getEntities()) {
         if (entity.getState() == cellState.HEALTHY) {
@@ -365,3 +366,5 @@ public class section {
     return count;
 }
 }
+
+

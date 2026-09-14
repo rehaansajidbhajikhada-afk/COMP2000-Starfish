@@ -140,7 +140,7 @@ addKeyListener(new KeyAdapter() {
         // Draw grid cells
         for (int row = 0; row < gridRows; row++) {
             for (int col = 0; col < gridCols; col++) {
-                GridCell gridCell = section.getGridCell(row, col);
+                GridCell<Entity> gridCell = section.getGridCell(row, col);
                 int x = sectionX + col * cellWidth;
                 int y = sectionY + row * cellHeight;
 

@@ -1,8 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
 
-public class GridCell {
-    private List<Entity> entities;
+public class GridCell<T extends Entity> {
+    private List<T> entities;
     private int gridX;
     private int gridY;
 
@@ -12,15 +12,15 @@ public class GridCell {
         this.entities = new ArrayList<>();
     }
 
-    public void addEntity(Entity entity) {
+    public void addEntity(T entity) {
         entities.add(entity);
     }
 
-    public void removeEntity(Entity entity) {
+    public void removeEntity(T entity) {
         entities.remove(entity);
     }
 
-    public List<Entity> getEntities() {
+    public List<T> getEntities() {
         return entities;
     }
 
@@ -30,7 +30,7 @@ public class GridCell {
 
     public int getHealthyCount() {
         int count = 0;
-        for (Entity entity : entities) {
+        for (T entity : entities) {
             if (entity.getState() == cellState.HEALTHY) {
                 count++;
             }
@@ -40,7 +40,7 @@ public class GridCell {
 
     public int getInfectedCount() {
         int count = 0;
-        for (Entity entity : entities) {
+        for (T entity : entities) {
             if (entity.getState() == cellState.INFECTED) {
                 count++;
             }
@@ -50,7 +50,7 @@ public class GridCell {
 
     public int getEnhancedHealthyCount() {
         int count = 0;
-        for (Entity entity : entities) {
+        for (T entity : entities) {
             if (entity.getState() == cellState.ENHANCED_HEALTHY) {
                 count++;
             }
@@ -60,24 +60,25 @@ public class GridCell {
 
     public int getDefenderCount() {
         int count = 0;
-        for (Entity entity : entities) {
+        for (T entity : entities) {
             if (entity.getState() == cellState.DEFENDER) {
                 count++;
             }
         }
         return count;
     }
+
     public int getDeadCount() {
-    int count = 0;
+        int count = 0;
 
-    for (Entity entity : entities) {
-        if (entity.getState() == cellState.DEAD) {
-            count++;
+        for (T entity : entities) {
+            if (entity.getState() == cellState.DEAD) {
+                count++;
+            }
         }
-    }
 
-    return count;
-}
+        return count;
+    }
 
     public int getGridX() {
         return gridX;
