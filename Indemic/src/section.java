@@ -211,7 +211,7 @@ public class section {
     }
 
     private void developDefenders() {
-        if (ticks < 6 || ticks % 3 != 0 || getTotalInfectedCount() == 0 || random.nextDouble() >= 0.25) {
+        if (ticks < 4 || ticks % 3 != 0 || getTotalInfectedCount() == 0 || random.nextDouble() >= 0.75) {
             return;
         }
 

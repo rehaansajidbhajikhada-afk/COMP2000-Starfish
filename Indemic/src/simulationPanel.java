@@ -6,6 +6,10 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
 import javax.swing.JPanel;
 
 public class simulationPanel extends JPanel {
@@ -13,6 +17,9 @@ public class simulationPanel extends JPanel {
     private Upgrade infectivityUpgrade;
     private Upgrade transmissionUpgrade;
     private boolean exposureMode = false;
+    private Map<String, Character> rescueKeys = new HashMap<>();
+    private Random keyRandom = new Random();
+   private final String AVAILABLE_KEYS = "ABCDFGHIJKLMNOPQRSTUVWXYZ";
 
     public simulationPanel(world world) {
         this.world = world;
@@ -33,11 +40,13 @@ addKeyListener(new KeyAdapter() {
         if (event.getKeyCode() == KeyEvent.VK_E) {
             exposureMode = !exposureMode;
             repaint();
+            return;
         }
-        if (event.getKeyCode() == KeyEvent.VK_R) {
-    world.rescueInfectedEntity();
-    repaint();
-}
+          char pressedKey =
+                Character.toUpperCase(event.getKeyChar());
+
+        handleRescueKey(pressedKey);
+   
     }
 });
     }
@@ -132,7 +141,75 @@ addKeyListener(new KeyAdapter() {
         g.drawRect(x, y, width, height);
         g.drawString(label, x + 15, y + 30);
     }
+private char getRescueKey(section targetSection, int row, int col) {
 
+    String cellId = targetSection.getX() + "-" +
+                    targetSection.getY() + "-" +
+                    row + "-" + col;
+
+    // Keep the same key if this cell already has one
+    if (rescueKeys.containsKey(cellId)) {
+        return rescueKeys.get(cellId);
+    }
+
+    HashSet<Character> usedKeys =
+            new HashSet<>(rescueKeys.values());
+
+    String available = "";
+
+    for (int i = 0; i < AVAILABLE_KEYS.length(); i++) {
+        char key = AVAILABLE_KEYS.charAt(i);
+
+        if (!usedKeys.contains(key)) {
+            available += key;
+        }
+    }
+
+    if (available.length() == 0) {
+        return '?';
+    }
+
+    char selectedKey =
+            available.charAt(keyRandom.nextInt(available.length()));
+
+    rescueKeys.put(cellId, selectedKey);
+
+    return selectedKey;
+}
+
+
+private void handleRescueKey(char pressedKey) {
+
+    for (section currentSection : world.getSections()) {
+
+        for (int row = 0; row < currentSection.getGridRows(); row++) {
+            for (int col = 0; col < currentSection.getGridCols(); col++) {
+
+                // Scoreboard is not a rescue cell
+                if (row == 0 && col == 0) {
+                    continue;
+                }
+
+                String cellId = currentSection.getX() + "-" +
+                                currentSection.getY() + "-" +
+                                row + "-" + col;
+
+                if (rescueKeys.containsKey(cellId)
+                        && rescueKeys.get(cellId) == pressedKey) {
+
+                    world.rescueInfectedEntity(
+                            currentSection, row, col);
+
+                    rescueKeys.remove(cellId);
+
+                    repaint();
+                    return;
+                }
+            }
+        }
+    }
+}
+    
    private void drawSection(Graphics2D g, section section) {
     int sectionX = (int) section.getX();
     int sectionY = (int) section.getY();
@@ -189,7 +266,38 @@ addKeyListener(new KeyAdapter() {
             g.setColor(Color.BLACK);
             g.setStroke(new BasicStroke(1));
             g.drawRect(x, y, cellWidth, cellHeight);
+            // Show rescue key and countdown for infected gameplay cells
+           if (!scoreboardCell && infectedCount > 0) {
 
+    char rescueKey = getRescueKey(section, row, col);
+
+    // Find an infected entity in this cell
+    Entity infectedEntity = null;
+
+    for (Entity entity : gridCell.getEntities()) {
+        if (entity.getState() == cellState.INFECTED) {
+            infectedEntity = entity;
+            break;
+        }
+    }
+
+    if (infectedEntity != null) {
+
+        g.setColor(Color.BLACK);
+
+        // Big rescue key
+        g.setFont(g.getFont().deriveFont(22f));
+        g.drawString("[" + rescueKey + "]",
+                x + cellWidth / 2 - 15,
+                y + cellHeight / 2);
+
+        // Countdown
+        g.setFont(g.getFont().deriveFont(12f));
+        g.drawString("Time: " + infectedEntity.getInfectionCountdown(),
+                x + 5,
+                y + cellHeight - 8);
+    }
+}
             if (totalCount > 0) {
                 totalEntities += totalCount;
             }
