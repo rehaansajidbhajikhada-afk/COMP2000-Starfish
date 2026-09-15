@@ -1,18 +1,55 @@
+
 public class Entity {
+
     private cellState state;
+    private int recoveryCount;
     private int gridX; // Grid position
     private int gridY; // Grid position
+    private int infectionCountdown;
+    private boolean rescueAvailable;
 
     public Entity(int gridX, int gridY, cellState state) {
         this.gridX = gridX;
         this.gridY = gridY;
         this.state = state;
+        this.recoveryCount = 0;
+        this.rescueAvailable = true;
+    }
+
+    public boolean rescue() {
+        if (state == cellState.INFECTED && rescueAvailable) {
+            state = cellState.HEALTHY;
+            infectionCountdown = 0;
+            rescueAvailable = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean isRescueAvailable() {
+        return rescueAvailable;
     }
 
     public void infect() {
         if (state == cellState.HEALTHY) {
             state = cellState.INFECTED;
+            infectionCountdown = 10;
         }
+    }
+
+    public void updateInfectionCountdown() {
+        if (state == cellState.INFECTED && infectionCountdown > 0) {
+            infectionCountdown--;
+
+            if (infectionCountdown == 0) {
+                state = cellState.DEAD;
+            }
+        }
+    }
+
+    public int getInfectionCountdown() {
+        return infectionCountdown;
     }
 
     public void enhanceHealthy() {
@@ -27,12 +64,22 @@ public class Entity {
 
     public void cure() {
         if (state == cellState.INFECTED) {
-            state = cellState.HEALTHY;
+
+            if (recoveryCount >= 2) {
+                state = cellState.DEAD;
+            } else {
+                state = cellState.HEALTHY;
+                recoveryCount++;
+            }
         }
     }
 
     public cellState getState() {
         return state;
+    }
+
+    public int getRecoveryCount() {
+        return recoveryCount;
     }
 
     public int getGridX() {
