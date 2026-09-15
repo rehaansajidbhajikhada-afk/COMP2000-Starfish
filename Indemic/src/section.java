@@ -287,11 +287,14 @@ public class section {
     public double getHeight() {
         return height;
     }
-    public boolean exposeCell(int row, int col) {
-
+    public boolean exposeCell(int row, int col) throws InvalidPositionException {
     if (row < 0 || row >= gridRows || col < 0 || col >= gridCols) {
-        return false;
-    }
+    throw new InvalidPositionException(
+        "Invalid grid position: row=" + row + ", col=" + col
+    );
+}
+    
+    
 
     GridCell<Entity> gridCell = grid[row][col];
 

@@ -37,7 +37,7 @@ public class world {
         sectionGrid[1][1] = s11;
         
     }
-    public boolean exposeCell(int x, int y) {
+    public boolean exposeCell(int x, int y) throws InvalidPositionException{
     int sectionCol = x / 600;
     int sectionRow = y / 400;
 

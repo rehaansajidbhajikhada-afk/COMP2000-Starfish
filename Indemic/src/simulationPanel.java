@@ -60,11 +60,15 @@ addKeyListener(new KeyAdapter() {
     }
 
     private void handleClick(int x, int y) {
-        if (exposureMode && world.hasStarted() && y < 800) {
+        if (exposureMode && world.hasStarted() && y < 800){
+             try {
         world.exposeCell(x, y);
+        } catch(InvalidPositionException e) {
+        System.out.println("Exposure failed: " + e.getMessage());
+    }
         repaint();
         return;
-        }
+}
         if (!world.hasStarted() && x < 1200 && y < 800) {
             int col = x / 600;
             int row = y / 400;
