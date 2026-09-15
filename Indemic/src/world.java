@@ -37,6 +37,27 @@ public class world {
         sectionGrid[1][1] = s11;
         
     }
+    public boolean rescueInfectedEntity() {
+
+    for (section currentSection : sections) {
+        for (int row = 0; row < currentSection.getGridRows(); row++) {
+            for (int col = 0; col < currentSection.getGridCols(); col++) {
+
+                GridCell<Entity> cell = currentSection.getGridCell(row, col);
+
+                for (Entity entity : cell.getEntities()) {
+                    if (entity.rescue()) {
+                        statusMessage = "Infected entity rescued!";
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    statusMessage = "No infected entity available for rescue";
+    return false;
+}
     public boolean exposeCell(int x, int y) throws InvalidPositionException{
        for (section selectedSection : sections) {
 

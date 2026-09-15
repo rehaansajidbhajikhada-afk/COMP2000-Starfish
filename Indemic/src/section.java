@@ -120,7 +120,9 @@ public class section {
                 allEntities.addAll(grid[row][col].getEntities());
             }
         }
-
+        for (Entity entity : allEntities) {
+    entity.updateInfectionCountdown();
+}
         // Move entities randomly to adjacent empty cells
         for (Entity entity : allEntities) {
             if (entity.getState() == cellState.DEAD) {

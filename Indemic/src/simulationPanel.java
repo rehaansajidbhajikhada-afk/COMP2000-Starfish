@@ -34,6 +34,10 @@ addKeyListener(new KeyAdapter() {
             exposureMode = !exposureMode;
             repaint();
         }
+        if (event.getKeyCode() == KeyEvent.VK_R) {
+    world.rescueInfectedEntity();
+    repaint();
+}
     }
 });
     }
@@ -129,73 +133,83 @@ addKeyListener(new KeyAdapter() {
         g.drawString(label, x + 15, y + 30);
     }
 
-    private void drawSection(Graphics2D g, section section) {
-        int sectionX = (int) section.getX();
-        int sectionY = (int) section.getY();
-        int sectionWidth = (int) section.getWidth();
-        int sectionHeight = (int) section.getHeight();
+   private void drawSection(Graphics2D g, section section) {
+    int sectionX = (int) section.getX();
+    int sectionY = (int) section.getY();
+    int sectionWidth = (int) section.getWidth();
+    int sectionHeight = (int) section.getHeight();
 
-        int gridRows = section.getGridRows();
-        int gridCols = section.getGridCols();
+    int gridRows = section.getGridRows();
+    int gridCols = section.getGridCols();
 
-        int cellWidth = sectionWidth / gridCols;
-        int cellHeight = sectionHeight / gridRows;
+    int cellWidth = sectionWidth / gridCols;
+    int cellHeight = sectionHeight / gridRows;
 
-        // Draw grid cells
-        for (int row = 0; row < gridRows; row++) {
-            for (int col = 0; col < gridCols; col++) {
-                GridCell<Entity> gridCell = section.getGridCell(row, col);
-                int x = sectionX + col * cellWidth;
-                int y = sectionY + row * cellHeight;
+    // Draw grid cells
+    for (int row = 0; row < gridRows; row++) {
+        for (int col = 0; col < gridCols; col++) {
 
-                // Draw cell background based on infection status
-                int healthyCount = gridCell.getHealthyCount();
-                int infectedCount = gridCell.getInfectedCount();
-                int enhancedHealthyCount = gridCell.getEnhancedHealthyCount();
-                int defenderCount = gridCell.getDefenderCount();
-                int deadCount = gridCell.getDeadCount();
-                int totalCount = gridCell.getEntityCount();
+            GridCell<Entity> gridCell = section.getGridCell(row, col);
 
-                if (totalCount == 0) {
-                    g.setColor(new Color(240, 240, 240)); // Light gray for empty
-                } else if (deadCount > 0) {
-                    g.setColor(Color.BLACK);
-                 } else if (defenderCount > 0) {
-                    g.setColor(new Color(120, 180, 255)); // Blue for defenders
-                } else if (enhancedHealthyCount > 0) {
-                    g.setColor(new Color(70, 150, 70)); // Dark green for enhanced healthy
-                } else if (infectedCount > healthyCount) {
-                    g.setColor(new Color(255, 200, 200)); // Light red for infected majority
-                } else if (healthyCount > 0) {
-                    g.setColor(new Color(200, 255, 200)); // Light green for healthy majority
-                }
-                g.fillRect(x, y, cellWidth, cellHeight);
-                // Draw cell border (thin)
-                g.setColor(Color.BLACK);
-                g.setStroke(new BasicStroke(1));
-                g.drawRect(x, y, cellWidth, cellHeight);
+            int x = sectionX + col * cellWidth;
+            int y = sectionY + row * cellHeight;
 
-                // Track entity count (no text display since each cell has exactly 1 entity)
-                if (totalCount > 0) {
-                    totalEntities += totalCount;
-                }
+            int healthyCount = gridCell.getHealthyCount();
+            int infectedCount = gridCell.getInfectedCount();
+            int enhancedHealthyCount = gridCell.getEnhancedHealthyCount();
+            int defenderCount = gridCell.getDefenderCount();
+            int deadCount = gridCell.getDeadCount();
+            int totalCount = gridCell.getEntityCount();
+
+            boolean scoreboardCell = (row == 0 && col == 0);
+
+            // Choose cell colour
+            if (scoreboardCell) {
+                g.setColor(new Color(190, 150, 100)); // Brown scoreboard
+            } else if (totalCount == 0) {
+                g.setColor(new Color(240, 240, 240)); // Empty
+            } else if (deadCount == totalCount) {
+                g.setColor(Color.BLACK); // Black only if everyone is dead
+            } else if (defenderCount > 0) {
+                g.setColor(new Color(120, 180, 255)); // Defender
+            } else if (enhancedHealthyCount > 0) {
+                g.setColor(new Color(70, 150, 70)); // Enhanced healthy
+            } else if (infectedCount > healthyCount) {
+                g.setColor(new Color(255, 200, 200)); // Infected majority
+            } else if (healthyCount > 0) {
+                g.setColor(new Color(200, 255, 200)); // Healthy
+            } else {
+                g.setColor(new Color(240, 240, 240));
+            }
+
+            // Actually paint the cell
+            g.fillRect(x, y, cellWidth, cellHeight);
+
+            // Cell border
+            g.setColor(Color.BLACK);
+            g.setStroke(new BasicStroke(1));
+            g.drawRect(x, y, cellWidth, cellHeight);
+
+            if (totalCount > 0) {
+                totalEntities += totalCount;
             }
         }
-
-        // Draw thick section border
-        g.setColor(Color.BLACK);
-        g.setStroke(new BasicStroke(4)); // Thick border for section
-        g.drawRect(sectionX, sectionY, sectionWidth, sectionHeight);
-
-        // Draw section statistics
-        int statsX = sectionX + 5;
-        int statsY = sectionY  + 15;
-
-        g.setColor(Color.BLACK);
-        g.drawString("Healthy: " + section.getTotalHealthyCount(), statsX, statsY);
-        g.drawString("Infected: " + section.getTotalInfectedCount(), statsX, statsY + 11);
-        g.drawString("Enhanced healthy: " + section.getTotalEnhancedHealthyCount(), statsX, statsY + 22);
-        g.drawString("Defenders: " + section.getTotalDefenderCount(), statsX, statsY + 33);
-        g.drawString("Dead: " + section.getTotalDeadCount(), statsX, statsY + 44);
     }
+
+    // Thick section border
+    g.setColor(Color.BLACK);
+    g.setStroke(new BasicStroke(4));
+    g.drawRect(sectionX, sectionY, sectionWidth, sectionHeight);
+
+    // Scoreboard text inside brown top-left cell
+    int statsX = sectionX + 5;
+    int statsY = sectionY + 15;
+
+    g.setColor(Color.BLACK);
+    g.drawString("Healthy: " + section.getTotalHealthyCount(), statsX, statsY);
+    g.drawString("Infected: " + section.getTotalInfectedCount(), statsX, statsY + 11);
+    g.drawString("Enhanced healthy: " + section.getTotalEnhancedHealthyCount(), statsX, statsY + 22);
+    g.drawString("Defenders: " + section.getTotalDefenderCount(), statsX, statsY + 33);
+    g.drawString("Dead: " + section.getTotalDeadCount(), statsX, statsY + 44);
+   }
 }
