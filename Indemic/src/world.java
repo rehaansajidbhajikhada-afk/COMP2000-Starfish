@@ -38,22 +38,30 @@ public class world {
         
     }
     public boolean exposeCell(int x, int y) throws InvalidPositionException{
-    int sectionCol = x / 600;
-    int sectionRow = y / 400;
+       for (section selectedSection : sections) {
 
-    if (sectionRow < 0 || sectionRow >= 2 || sectionCol < 0 || sectionCol >= 2) {
-        return false;
+        int sectionX = (int) selectedSection.getX();
+        int sectionY = (int) selectedSection.getY();
+        int sectionWidth = (int) selectedSection.getWidth();
+        int sectionHeight = (int) selectedSection.getHeight();
+
+        if (x >= sectionX && x < sectionX + sectionWidth
+                && y >= sectionY && y < sectionY + sectionHeight) {
+
+            int localX = x - sectionX;
+            int localY = y - sectionY;
+
+            int cellWidth = sectionWidth / selectedSection.getGridCols();
+            int cellHeight = sectionHeight / selectedSection.getGridRows();
+
+            int cellCol = localX / cellWidth;
+            int cellRow = localY / cellHeight;
+
+            return selectedSection.exposeCell(cellRow, cellCol);
+        }
     }
 
-    section selectedSection = sectionGrid[sectionRow][sectionCol];
-
-    int localX = x - sectionCol * 600;
-    int localY = y - sectionRow * 400;
-
-    int cellCol = localX / 120;
-    int cellRow = localY / 80;
-
-    return selectedSection.exposeCell(cellRow, cellCol);
+    return false;
 }
     public void tick() {
         if (startingSection == null) {
