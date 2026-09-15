@@ -1,7 +1,9 @@
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class GridCell<T extends Entity> {
+
     private List<T> entities;
     private int gridX;
     private int gridY;

@@ -1,3 +1,4 @@
+
 import javax.swing.JFrame;
 
 public class App {
@@ -5,7 +6,6 @@ public class App {
     public static void main(String[] args) {
 
         world world = new world(1200, 600);
-
 
         JFrame frame = new JFrame("Indemic - Plague Simulation");
 

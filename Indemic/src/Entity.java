@@ -1,4 +1,6 @@
+
 public class Entity {
+
     private cellState state;
     private int recoveryCount;
     private int gridX; // Grid position
@@ -13,37 +15,43 @@ public class Entity {
         this.recoveryCount = 0;
         this.rescueAvailable = true;
     }
-     public boolean rescue() {
-    if (state == cellState.INFECTED && rescueAvailable) {
-        state = cellState.HEALTHY;
-        infectionCountdown = 0;
-        rescueAvailable = false;
-        return true;
+
+    public boolean rescue() {
+        if (state == cellState.INFECTED && rescueAvailable) {
+            state = cellState.HEALTHY;
+            infectionCountdown = 0;
+            rescueAvailable = false;
+            return true;
+        }
+
+        return false;
     }
 
-    return false;
-} 
-public boolean isRescueAvailable() {
-    return rescueAvailable;
-}
+    public boolean isRescueAvailable() {
+        return rescueAvailable;
+    }
+
     public void infect() {
         if (state == cellState.HEALTHY) {
             state = cellState.INFECTED;
             infectionCountdown = 10;
         }
     }
-    public void updateInfectionCountdown() {
-    if (state == cellState.INFECTED && infectionCountdown > 0) {
-        infectionCountdown--;
 
-        if (infectionCountdown == 0) {
-            state = cellState.DEAD;
+    public void updateInfectionCountdown() {
+        if (state == cellState.INFECTED && infectionCountdown > 0) {
+            infectionCountdown--;
+
+            if (infectionCountdown == 0) {
+                state = cellState.DEAD;
+            }
         }
     }
-}
+
     public int getInfectionCountdown() {
-    return infectionCountdown;
-}
+        return infectionCountdown;
+    }
+
     public void enhanceHealthy() {
         if (state == cellState.HEALTHY) {
             state = cellState.ENHANCED_HEALTHY;
@@ -54,24 +62,25 @@ public boolean isRescueAvailable() {
         this.state = state;
     }
 
-  public void cure() {
-    if (state == cellState.INFECTED) {
+    public void cure() {
+        if (state == cellState.INFECTED) {
 
-        if (recoveryCount >= 2) {
-            state = cellState.DEAD;
-        } else {
-            state = cellState.HEALTHY;
-            recoveryCount++;
+            if (recoveryCount >= 2) {
+                state = cellState.DEAD;
+            } else {
+                state = cellState.HEALTHY;
+                recoveryCount++;
+            }
         }
     }
-}
 
     public cellState getState() {
         return state;
     }
+
     public int getRecoveryCount() {
-    return recoveryCount;
-}
+        return recoveryCount;
+    }
 
     public int getGridX() {
         return gridX;

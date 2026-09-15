@@ -1,3 +1,4 @@
+
 public abstract class Upgrade {
 
     private String name;
@@ -12,4 +13,3 @@ public abstract class Upgrade {
 
     public abstract boolean apply(world world);
 }
-

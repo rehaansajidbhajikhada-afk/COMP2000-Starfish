@@ -1,3 +1,4 @@
+
 public class InfectivityUpgrade extends Upgrade {
 
     public InfectivityUpgrade() {

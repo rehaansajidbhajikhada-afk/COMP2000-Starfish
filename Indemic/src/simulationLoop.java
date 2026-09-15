@@ -3,6 +3,7 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class simulationLoop {
+
     private final world world;
     private final JPanel panel;
     private Timer timer;

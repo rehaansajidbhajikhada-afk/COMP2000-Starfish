@@ -1,8 +1,10 @@
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class world {
+
     private List<section> sections;
     private section[][] sectionGrid;
     private int infectionThreshold = 10;
@@ -19,51 +21,52 @@ public class world {
 
         sections = new ArrayList<>();
         sectionGrid = new section[2][2];
-        
+
         // Create 2x2 grid of sections, each with a 5x5 grid of cells and a sparse starting population so there is still room to move.
         section s00 = new section(0.0, 0.0, sectionWidth, sectionHeight, 5, 5, 15);
         section s01 = new section(sectionWidth, 0.0, sectionWidth, sectionHeight, 5, 5, 15);
         section s10 = new section(0.0, sectionHeight, sectionWidth, sectionHeight, 5, 5, 15);
         section s11 = new section(sectionWidth, sectionHeight, sectionWidth, sectionHeight, 5, 5, 15);
-        
+
         sections.add(s00);
         sections.add(s01);
         sections.add(s10);
         sections.add(s11);
-        
+
         sectionGrid[0][0] = s00;
         sectionGrid[0][1] = s01;
         sectionGrid[1][0] = s10;
         sectionGrid[1][1] = s11;
-        
+
     }
-    
-    public boolean exposeCell(int x, int y) throws InvalidPositionException{
-       for (section selectedSection : sections) {
 
-        int sectionX = (int) selectedSection.getX();
-        int sectionY = (int) selectedSection.getY();
-        int sectionWidth = (int) selectedSection.getWidth();
-        int sectionHeight = (int) selectedSection.getHeight();
+    public boolean exposeCell(int x, int y) throws InvalidPositionException {
+        for (section selectedSection : sections) {
 
-        if (x >= sectionX && x < sectionX + sectionWidth
-                && y >= sectionY && y < sectionY + sectionHeight) {
+            int sectionX = (int) selectedSection.getX();
+            int sectionY = (int) selectedSection.getY();
+            int sectionWidth = (int) selectedSection.getWidth();
+            int sectionHeight = (int) selectedSection.getHeight();
 
-            int localX = x - sectionX;
-            int localY = y - sectionY;
+            if (x >= sectionX && x < sectionX + sectionWidth
+                    && y >= sectionY && y < sectionY + sectionHeight) {
 
-            int cellWidth = sectionWidth / selectedSection.getGridCols();
-            int cellHeight = sectionHeight / selectedSection.getGridRows();
+                int localX = x - sectionX;
+                int localY = y - sectionY;
 
-            int cellCol = localX / cellWidth;
-            int cellRow = localY / cellHeight;
+                int cellWidth = sectionWidth / selectedSection.getGridCols();
+                int cellHeight = sectionHeight / selectedSection.getGridRows();
 
-            return selectedSection.exposeCell(cellRow, cellCol);
+                int cellCol = localX / cellWidth;
+                int cellRow = localY / cellHeight;
+
+                return selectedSection.exposeCell(cellRow, cellCol);
+            }
         }
+
+        return false;
     }
 
-    return false;
-}
     public void tick() {
         if (startingSection == null) {
             return;
@@ -79,12 +82,12 @@ public class world {
         for (section currentSection : sections) {
             currentSection.tick();
         }
-        
+
         // Check for inter-section infection spread
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 2; col++) {
                 section currentSection = sectionGrid[row][col];
-                
+
                 int infectedCount = currentSection.getTotalInfectedCount();
                 int totalCount = currentSection.getTotalEntityCount();
                 boolean sectionIsFullyInfected = totalCount > 0 && infectedCount == totalCount;
@@ -103,11 +106,11 @@ public class world {
     private void spreadToAdjacentSection(int currentRow, int currentCol, int dRow, int dCol) {
         int newRow = currentRow + dRow;
         int newCol = currentCol + dCol;
-        
+
         // Boundary check
         if (newRow >= 0 && newRow < 2 && newCol >= 0 && newCol < 2) {
             section adjacentSection = sectionGrid[newRow][newCol];
-            
+
             // Only spread if the adjacent section still has room to accept new infected entities.
             if (adjacentSection.getTotalEntityCount() < 20) {
                 // Add 2-3 infected entities to the adjacent section
@@ -177,19 +180,20 @@ public class world {
 
     public String getStatusMessage() {
         return statusMessage;
-    } 
-    public boolean rescueInfectedEntity(section targetSection, int row, int col) {
-
-    GridCell<Entity> cell = targetSection.getGridCell(row, col);
-
-    for (Entity entity : cell.getEntities()) {
-        if (entity.rescue()) {
-            statusMessage = "Infected entity rescued!";
-            return true;
-        }
     }
 
-    statusMessage = "No infected entity available in this cell";
-    return false;
-}
+    public boolean rescueInfectedEntity(section targetSection, int row, int col) {
+
+        GridCell<Entity> cell = targetSection.getGridCell(row, col);
+
+        for (Entity entity : cell.getEntities()) {
+            if (entity.rescue()) {
+                statusMessage = "Infected entity rescued!";
+                return true;
+            }
+        }
+
+        statusMessage = "No infected entity available in this cell";
+        return false;
+    }
 }
