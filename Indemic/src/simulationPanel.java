@@ -65,74 +65,127 @@ addKeyListener(new KeyAdapter() {
         }
 
         // Draw statistics
-        g2d.setColor(Color.BLACK);
-        g2d.drawString("Total Entities: " + totalEntities, 10, getHeight() - 20);
-        g2d.drawString("Simulation Grid View - Each cell shows entity count", 10, getHeight() - 5);
         drawHud(g2d);
         totalEntities = 0;
     }
 
     private void handleClick(int x, int y) {
-        if (exposureMode && world.hasStarted() && y < 800){
-             try {
-        world.exposeCell(x, y);
-        } catch(InvalidPositionException e) {
-        System.out.println("Exposure failed: " + e.getMessage());
-    }
+
+    // Exposure mode - only inside simulation grid
+    if (exposureMode && world.hasStarted() && y < 600) {
+        try {
+            world.exposeCell(x, y);
+        } catch (InvalidPositionException e) {
+            System.out.println(
+                "Exposure failed: " + e.getMessage()
+            );
+        }
+
         repaint();
         return;
+    }
+
+    // Select starting section
+    if (!world.hasStarted() && x < 1200 && y < 600) {
+
+        int col = x / 600;
+        int row = y / 300;
+
+        world.selectStartingSection(row, col);
+    }
+
+    // HUD upgrade buttons
+    else if (y >= 645 && y <= 690) {
+
+        if (x >= 10 && x <= 210) {
+            infectivityUpgrade.apply(world);
+
+        } else if (x >= 220 && x <= 420) {
+            transmissionUpgrade.apply(world);
+        }
+    }
+
+    repaint();
 }
-        if (!world.hasStarted() && x < 1200 && y < 800) {
-            int col = x / 600;
-            int row = y / 400;
-            world.selectStartingSection(row, col);
-        } else if (y >= 850 && y <= 900) {
-            if (x >= 10 && x <= 210) {
-                infectivityUpgrade.apply(world);
-            } else if (x >= 220 && x <= 420) {
-                transmissionUpgrade.apply(world);
-            }
-        }
-        repaint();
+
+   private void drawHud(Graphics2D g) {
+
+    // HUD background directly below the 600px simulation grid
+    g.setColor(new Color(250, 250, 250));
+    g.fillRect(0, 600, getWidth(), 180);
+
+    g.setColor(Color.BLACK);
+
+    // Main statistics
+    g.drawString("Total Entities: " + totalEntities, 10, 625);
+    g.drawString("DNA Points: " + world.getDnaPoints(), 150, 625);
+    g.drawString(
+        "Infectivity: " + (int) (world.getInfectionChance() * 100) + "%",
+        270, 625
+    );
+    g.drawString(
+        "Section Spread Threshold: " + world.getInfectionThreshold(),
+        400, 625
+    );
+
+    // Exposure mode
+    if (exposureMode) {
+        g.drawString(
+            "Exposure Mode: ON - Click a healthy cell to infect it",
+            650, 625
+        );
+    } else {
+        g.drawString(
+            "Exposure Mode: OFF - Press E to activate",
+            650, 625
+        );
     }
 
-    private void drawHud(Graphics2D g) {
-        g.fillRect(0, 820, getWidth(), 130);
-        g.setColor(new Color(250, 250, 250));
-        g.fillRect(0, 820, getWidth(), 130);
-        g.setColor(Color.BLACK);
-        g.drawString("DNA points: " + world.getDnaPoints(), 10, 840);
-        g.drawString("Infectivity: " + (int) (world.getInfectionChance() * 100) + "%", 150, 840);
-        g.drawString("Section spread threshold: " + world.getInfectionThreshold(), 285, 840);
-        if (exposureMode) {
-        g.drawString("Exposure Mode: ON - Click a healthy cell to infect it", 850, 840);
-        } else {
-       g.drawString("Exposure Mode: OFF - Press E to activate", 850, 840);
-       }
+    // Upgrade buttons
+    drawButton(g, 10, 645, 200, 45, "Upgrade Infectivity");
+    drawButton(g, 220, 645, 200, 45, "Upgrade Transmission");
 
-        drawButton(g, 10, 850, 200, 50, "Upgrade Infectivity");
-        drawButton(g, 220, 850, 200, 50, "Upgrade Transmission");
-        g.drawString(world.getStatusMessage(), 450, 880);
-        g.setColor(new Color(70, 150, 70));
-        g.fillRect(450, 900, 15, 15);
-        g.setColor(Color.BLACK);
-        g.drawString("Enhanced healthy", 475, 912);
-        g.setColor(new Color(120, 180, 255));
-        g.fillRect(620, 900, 15, 15);
-        g.setColor(Color.BLACK);
-        g.drawString("Defender", 645, 912);
-        g.setColor(Color.BLACK);
-        g.fillRect(760, 900, 15, 15);
-        g.setColor(Color.BLACK);
-        g.drawString("Dead", 785, 912);
+    // Current game message
+    g.setColor(Color.BLACK);
+    g.drawString("Status: " + world.getStatusMessage(), 450, 672);
 
-        if (!world.hasStarted()) {
-            g.setColor(new Color(255, 255, 255, 210));
-            g.fillRect(0, 0, getWidth(), 50);
-            g.setColor(Color.BLACK);
-            g.drawString("Click a section to choose where the infection begins", 15, 30);
-        }
+    // Legend
+    g.setColor(new Color(70, 150, 70));
+    g.fillRect(10, 710, 15, 15);
+
+    g.setColor(Color.BLACK);
+    g.drawString("Enhanced Healthy", 35, 722);
+
+    g.setColor(new Color(120, 180, 255));
+    g.fillRect(180, 710, 15, 15);
+
+    g.setColor(Color.BLACK);
+    g.drawString("Defender", 205, 722);
+
+    g.setColor(Color.BLACK);
+    g.fillRect(300, 710, 15, 15);
+
+    g.setColor(Color.BLACK);
+    g.drawString("Dead", 325, 722);
+
+    g.setColor(new Color(255, 200, 200));
+    g.fillRect(380, 710, 15, 15);
+
+    g.setColor(Color.BLACK);
+    g.drawString("Infected", 405, 722);
+
+    // Initial instruction
+    if (!world.hasStarted()) {
+        g.setColor(new Color(255, 255, 255, 210));
+        g.fillRect(0, 0, getWidth(), 50);
+
+        g.setColor(Color.BLACK);
+        g.drawString(
+            "Click a section to choose where the infection begins",
+            15, 30
+        );
     }
+}
 
     private void drawButton(Graphics2D g, int x, int y, int width, int height, String label) {
         g.setColor(new Color(220, 230, 240));
@@ -239,7 +292,13 @@ private void handleRescueKey(char pressedKey) {
             int totalCount = gridCell.getEntityCount();
 
             boolean scoreboardCell = (row == 0 && col == 0);
+            String cellId = section.getX() + "-" +
+                section.getY() + "-" +
+                row + "-" + col;
 
+if (infectedCount == 0) {
+    rescueKeys.remove(cellId);
+}
             // Choose cell colour
             if (scoreboardCell) {
                 g.setColor(new Color(190, 150, 100)); // Brown scoreboard

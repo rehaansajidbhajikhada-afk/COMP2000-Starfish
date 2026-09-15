@@ -211,9 +211,13 @@ public class section {
     }
 
     private void developDefenders() {
-        if (ticks < 4 || ticks % 3 != 0 || getTotalInfectedCount() == 0 || random.nextDouble() >= 0.75) {
-            return;
-        }
+        if (ticks < 4
+        || ticks % 3 != 0
+        || getTotalInfectedCount() == 0
+        || getTotalDefenderCount() >= 2
+        || random.nextDouble() >= 0.75) {
+    return;
+}
 
         List<GridCell<Entity>> healthyCells = new ArrayList<>();
         for (int row = 0; row < gridRows; row++) {
