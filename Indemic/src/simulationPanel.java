@@ -21,8 +21,7 @@ public class simulationPanel extends JPanel {
     private boolean exposureMode = false;
     private Map<String, Character> rescueKeys = new HashMap<>();
     private Random keyRandom = new Random();
-    private final String AVAILABLE_KEYS = "ABCDFGHIJKLMNOPQRSTUVWXYZ";
-
+    private final String AVAILABLE_KEYS = "ABDFGHIJKLMNOPQRSTUVWXYZ";
     public simulationPanel(world world) {
         this.world = world;
         this.infectivityUpgrade = new InfectivityUpgrade();
@@ -36,21 +35,53 @@ public class simulationPanel extends JPanel {
         });
         setFocusable(true);
 
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent event) {
-                if (event.getKeyCode() == KeyEvent.VK_E) {
-                    exposureMode = !exposureMode;
-                    repaint();
-                    return;
-                }
-                char pressedKey
-                        = Character.toUpperCase(event.getKeyChar());
+       
+addKeyListener(new KeyAdapter() {
+    @Override
+    public void keyPressed(KeyEvent event) {
 
-                handleRescueKey(pressedKey);
+        // E = Exposure Mode
+        if (event.getKeyCode() == KeyEvent.VK_E) {
+            exposureMode = !exposureMode;
+            repaint();
+            return;
+        }
 
-            }
-        });
+        // 1 = Urgent Cure
+        if (event.getKeyCode() == KeyEvent.VK_1) {
+            world.setCureStrategy(new UrgentCureStrategy());
+            repaint();
+            return;
+        }
+
+        // 2 = High Risk Cure
+        if (event.getKeyCode() == KeyEvent.VK_2) {
+            world.setCureStrategy(new HighRiskCureStrategy());
+            repaint();
+            return;
+        }
+
+        // 3 = Random Cure
+        if (event.getKeyCode() == KeyEvent.VK_3) {
+            world.setCureStrategy(new RandomCureStrategy());
+            repaint();
+            return;
+        }
+
+        // C = Automatic Cure
+        if (event.getKeyCode() == KeyEvent.VK_C) {
+            world.autoRescue();
+            repaint();
+            return;
+        }
+
+        // Existing manual rescue keys
+        char pressedKey =
+                Character.toUpperCase(event.getKeyChar());
+
+        handleRescueKey(pressedKey);
+    }
+});
     }
 
     int totalEntities;
@@ -109,6 +140,20 @@ public class simulationPanel extends JPanel {
     }
 
     private void drawHud(Graphics2D g) {
+        
+// Strategy Pattern controls
+g.setColor(Color.BLACK);
+
+g.drawString(
+    "AUTO CURE: [1] Urgent  [2] High Risk  [3] Random  [C] Cure (2 DNA)",
+    10, 755
+);
+
+g.drawString(
+    "Selected Strategy: " + world.getCureStrategyName(),
+    650, 755
+);
+
 
         // HUD background directly below the 600px simulation grid
         g.setColor(new Color(250, 250, 250));

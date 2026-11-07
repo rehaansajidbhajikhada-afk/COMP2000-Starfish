@@ -14,6 +14,8 @@ public class world {
     private section startingSection;
     private String statusMessage = "Select a section to start the infection";
     private Random random = new Random();
+    private CureStrategy cureStrategy = new UrgentCureStrategy();
+private static final int AUTO_RESCUE_DNA_COST = 2;
 
     public world(double width, double height) {
         double sectionWidth = width / 2;
@@ -181,6 +183,96 @@ public class world {
     public String getStatusMessage() {
         return statusMessage;
     }
+    
+public void setCureStrategy(CureStrategy nextStrategy) {
+    if (nextStrategy == null) {
+        throw new IllegalArgumentException("Strategy cannot be null");
+    }
+
+    cureStrategy = nextStrategy;
+    statusMessage = "Cure mode: " + nextStrategy.name();
+}
+
+public String getCureStrategyName() {
+    return cureStrategy.name();
+}
+
+public boolean autoRescue() {
+    if (!hasStarted()) {
+        statusMessage = "Start the infection first";
+        return false;
+    }
+
+    if (dnaPoints < AUTO_RESCUE_DNA_COST) {
+        statusMessage = "Auto rescue needs 2 DNA points";
+        return false;
+    }
+
+    List<CureTarget> candidates = new ArrayList<>();
+
+    for (section area : sections) {
+        for (int row = 0; row < area.getGridRows(); row++) {
+            for (int col = 0; col < area.getGridCols(); col++) {
+
+                GridCell<Entity> cell = area.getGridCell(row, col);
+                if (cell == null) continue;
+
+                for (Entity entity : cell.getEntities()) {
+                    if (entity.getState() == cellState.INFECTED
+                            && entity.isRescueAvailable()) {
+
+                        candidates.add(new CureTarget(
+                            area, row, col, entity,
+                            countInfectedNeighbours(area, row, col)
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    CureTarget target = cureStrategy.selectTarget(candidates);
+
+    if (target == null) {
+        statusMessage = "No eligible infected entities";
+        return false;
+    }
+
+    if (!target.entity.rescue()) {
+        statusMessage = "Selected entity could not be rescued";
+        return false;
+    }
+
+    dnaPoints -= AUTO_RESCUE_DNA_COST;
+    statusMessage = "Auto rescue using "
+        + cureStrategy.name() + " (-2 DNA)";
+
+    return true;
+}
+
+private int countInfectedNeighbours(section area, int row, int col) {
+    int count = 0;
+
+    for (int dr = -1; dr <= 1; dr++) {
+        for (int dc = -1; dc <= 1; dc++) {
+            if (dr == 0 && dc == 0) continue;
+
+            GridCell<Entity> neighbour =
+                area.getGridCell(row + dr, col + dc);
+
+            if (neighbour == null) continue;
+
+            for (Entity entity : neighbour.getEntities()) {
+                if (entity.getState() == cellState.INFECTED) {
+                    count++;
+                }
+            }
+        }
+    }
+
+    return count;
+}
+
 
     public boolean rescueInfectedEntity(section targetSection, int row, int col) {
 

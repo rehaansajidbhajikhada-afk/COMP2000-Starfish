@@ -9,13 +9,15 @@ public class Entity {
     private boolean rescueAvailable;
 
     public Entity(int gridX, int gridY, cellState state) {
-        this.gridX = gridX;
-        this.gridY = gridY;
-        this.state = state;
-        this.recoveryCount = 0;
-        this.rescueAvailable = true;
-    }
+    this.gridX = gridX;
+    this.gridY = gridY;
+    this.state = state;
+    this.recoveryCount = 0;
+    this.rescueAvailable = true;
 
+    this.infectionCountdown =
+        (state == cellState.INFECTED) ? 10 : 0;
+}
     public boolean rescue() {
         if (state == cellState.INFECTED && rescueAvailable) {
             state = cellState.HEALTHY;
