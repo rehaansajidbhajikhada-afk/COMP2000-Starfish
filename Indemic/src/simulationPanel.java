@@ -218,6 +218,19 @@ g.drawString(
 
         g.setColor(Color.BLACK);
         g.drawString("Infected", 405, 722);
+        // Cure strategy controls
+g.setColor(Color.BLACK);
+g.setFont(g.getFont().deriveFont(13f));
+
+g.drawString(
+    "AUTO CURE: [1] Urgent  [2] High Risk  [3] Random  [C] Cure (2 DNA)",
+    10, 755
+);
+
+g.drawString(
+    "Selected: " + world.getCureStrategyName(),
+    10, 775
+);
 
         // Initial instruction
         if (!world.hasStarted()) {
