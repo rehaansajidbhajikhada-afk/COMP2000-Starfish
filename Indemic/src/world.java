@@ -16,6 +16,11 @@ public class world {
     private Random random = new Random();
     private CureStrategy cureStrategy = new UrgentCureStrategy();
 private static final int AUTO_RESCUE_DNA_COST = 2;
+private final PowerMeter powerMeter = new PowerMeter();
+
+public PowerMeter getPowerMeter() {
+    return powerMeter;
+}
 
     public world(double width, double height) {
         double sectionWidth = width / 2;
@@ -75,6 +80,7 @@ private static final int AUTO_RESCUE_DNA_COST = 2;
         }
 
         ticks++;
+        powerMeter.charge(10);
         if (ticks % 4 == 0) {
             dnaPoints++;
             statusMessage = "DNA point earned - choose an upgrade";
@@ -247,6 +253,55 @@ public boolean autoRescue() {
     statusMessage = "Auto rescue using "
         + cureStrategy.name() + " (-2 DNA)";
 
+    return true;
+}
+
+public boolean activateBooster() {
+
+    if (!hasStarted()) {
+        statusMessage = "Start the infection first";
+        return false;
+    }
+
+    if (!powerMeter.isReady()) {
+        statusMessage = "Booster is not fully charged";
+        return false;
+    }
+
+    int rescued = 0;
+
+    for (section area : sections) {
+        for (int row = 0; row < area.getGridRows(); row++) {
+            for (int col = 0; col < area.getGridCols(); col++) {
+
+                // Skip the scoreboard cell
+                if (row == 0 && col == 0) {
+                    continue;
+                }
+
+                GridCell<Entity> cell = area.getGridCell(row, col);
+
+                if (cell == null) {
+                    continue;
+                }
+
+                for (Entity entity : cell.getEntities()) {
+                    if (entity.rescue()) {
+                        rescued++;
+                    }
+                }
+            }
+        }
+    }
+
+    if (rescued == 0) {
+        statusMessage = "No eligible infected entities to rescue";
+        return false;
+    }
+
+    powerMeter.consume();
+
+    statusMessage = "POWER BOOSTER! Rescued " + rescued + " entities";
     return true;
 }
 

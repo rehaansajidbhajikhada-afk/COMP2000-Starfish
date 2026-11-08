@@ -21,11 +21,29 @@ public class simulationPanel extends JPanel {
     private boolean exposureMode = false;
     private Map<String, Character> rescueKeys = new HashMap<>();
     private Random keyRandom = new Random();
-    private final String AVAILABLE_KEYS = "ABDFGHIJKLMNOPQRSTUVWXYZ";
+    private final String AVAILABLE_KEYS = "ADFGHIJKLMNOPQRSTUVWXYZ";
+    private int displayedPower = 0;
+private String boosterAlert = "";
     public simulationPanel(world world) {
         this.world = world;
         this.infectivityUpgrade = new InfectivityUpgrade();
         this.transmissionUpgrade = new TransmissionUpgrade();
+        
+// Observer 1: Update HUD power
+world.getPowerMeter().addObserver(power -> {
+    displayedPower = power;
+    repaint();
+});
+
+// Observer 2: Display a ready notification
+world.getPowerMeter().addObserver(power -> {
+    if (power == 100) {
+        boosterAlert = "BOOSTER READY! Press B";
+    } else {
+        boosterAlert = "";
+    }
+});
+
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
@@ -74,6 +92,12 @@ addKeyListener(new KeyAdapter() {
             repaint();
             return;
         }
+        // B = Power Booster
+if (event.getKeyCode() == KeyEvent.VK_B) {
+    world.activateBooster();
+    repaint();
+    return;
+}
 
         // Existing manual rescue keys
         char pressedKey =
@@ -140,14 +164,6 @@ addKeyListener(new KeyAdapter() {
     }
 
     private void drawHud(Graphics2D g) {
-        
-// Strategy Pattern controls
-g.setColor(Color.BLACK);
-
-g.drawString(
-    "AUTO CURE: [1] Urgent  [2] High Risk  [3] Random  [C] Cure (2 DNA)",
-    10, 755
-);
 
 g.drawString(
     "Selected Strategy: " + world.getCureStrategyName(),
@@ -218,6 +234,28 @@ g.drawString(
 
         g.setColor(Color.BLACK);
         g.drawString("Infected", 405, 722);
+        
+// Power Booster HUD
+g.setColor(Color.BLACK);
+g.setFont(g.getFont().deriveFont(13f));
+
+g.drawString("Power: " + displayedPower + "%", 650, 705);
+
+// Background bar
+g.setColor(Color.LIGHT_GRAY);
+g.fillRect(650, 712, 250, 14);
+
+// Filled power bar
+g.setColor(new Color(50, 180, 90));
+g.fillRect(650, 712, displayedPower * 250 / 100, 14);
+
+// Bar border
+g.setColor(Color.BLACK);
+g.drawRect(650, 712, 250, 14);
+
+// Booster notification
+g.drawString(boosterAlert, 650, 745);
+
         // Cure strategy controls
 g.setColor(Color.BLACK);
 g.setFont(g.getFont().deriveFont(13f));
