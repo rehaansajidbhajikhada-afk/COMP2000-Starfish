@@ -141,6 +141,8 @@ public int getWorldDeadCount() {
     return sections.stream()
         .mapToInt(s -> s.getTotalDeadCount())
         .sum();
+}public java.util.Map<cellState, Long> getPopulationStatistics() {
+    return PopulationAnalytics.countByState(this);
 }
 
 

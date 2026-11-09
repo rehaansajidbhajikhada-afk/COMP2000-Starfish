@@ -1,4 +1,3 @@
-
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -190,6 +189,20 @@ g.drawString(
 g.drawString(
     "Total Dead: " + world.getWorldDeadCount(),
     850, 685
+);
+java.util.Map<cellState, Long> stats =
+    world.getPopulationStatistics();
+
+g.setColor(Color.BLACK);
+
+g.drawString(
+    "Healthy: " + stats.getOrDefault(cellState.HEALTHY, 0L),
+    950, 685
+);
+
+g.drawString(
+    "Defenders: " + stats.getOrDefault(cellState.DEFENDER, 0L),
+    1050, 685
 );
         g.drawString(
                 "Infectivity: " + (int) (world.getInfectionChance() * 100) + "%",
