@@ -180,6 +180,17 @@ g.drawString(
         // Main statistics
         g.drawString("Total Entities: " + totalEntities, 10, 625);
         g.drawString("DNA Points: " + world.getDnaPoints(), 150, 625);
+        g.setColor(Color.BLACK);
+
+g.drawString(
+    "Total Infected: " + world.getWorldInfectedCount(),
+    650, 685
+);
+
+g.drawString(
+    "Total Dead: " + world.getWorldDeadCount(),
+    850, 685
+);
         g.drawString(
                 "Infectivity: " + (int) (world.getInfectionChance() * 100) + "%",
                 270, 625

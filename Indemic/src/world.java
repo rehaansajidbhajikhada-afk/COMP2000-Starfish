@@ -131,6 +131,18 @@ public PowerMeter getPowerMeter() {
     public List<section> getSections() {
         return sections;
     }
+    
+public int getWorldInfectedCount() {
+    return sections.stream()
+        .mapToInt(section -> section.getTotalInfectedCount())
+        .sum();
+}
+public int getWorldDeadCount() {
+    return sections.stream()
+        .mapToInt(s -> s.getTotalDeadCount())
+        .sum();
+}
+
 
     public boolean selectStartingSection(int row, int col) {
         if (startingSection != null || row < 0 || row >= 2 || col < 0 || col >= 2) {
