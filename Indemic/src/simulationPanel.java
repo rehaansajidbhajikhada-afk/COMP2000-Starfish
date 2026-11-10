@@ -13,15 +13,28 @@ import java.util.Random;
 import javax.swing.JPanel;
 
 public class simulationPanel extends JPanel {
-
+    private final AudioManager audio = new AudioManager();
+private String audioPhase = "";
+private long gameOverSoundStart = 0;
+private boolean laughPlayed = false;
+private long emergencyDeadline = 0;
+private int emergencyTimeLeft = 3;
+private long gameOverAnimationStart = 0;
     private world world;
     private Upgrade infectivityUpgrade;
     private Upgrade transmissionUpgrade;
     private boolean exposureMode = false;
     private Map<String, Character> rescueKeys = new HashMap<>();
     private Random keyRandom = new Random();
-    private final String AVAILABLE_KEYS = "ADFGHIJKLMNOPQRSTUVWXYZ";
+    private final String AVAILABLE_KEYS = "ADFGHIJKLMNOPQRSTUVWXYZ4567890";
     private int displayedPower = 0;
+    private long overloadDeadline = 0;
+private int overloadTimeLeft = 5;
+private boolean overloadWarning = false;
+    private final java.util.Set<Integer> heldKeys =
+    new java.util.HashSet<>();
+
+private long oneKeyWarningUntil = 0;
 private String boosterAlert = "";
     public simulationPanel(world world) {
         this.world = world;
@@ -42,6 +55,12 @@ world.getPowerMeter().addObserver(power -> {
         boosterAlert = "";
     }
 });
+addFocusListener(new java.awt.event.FocusAdapter() {
+    @Override
+    public void focusLost(java.awt.event.FocusEvent event) {
+        heldKeys.clear();
+    }
+});
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -52,11 +71,76 @@ world.getPowerMeter().addObserver(power -> {
         });
         setFocusable(true);
 
+javax.swing.Timer emergencyTimer = new javax.swing.Timer(50, event -> {
+    updateGameAudio();
+    updateRescueKeyCapacity();
+
+    if (world.isGameOver()) {
+        emergencyDeadline = 0;
+        repaint();
+        return;
+    }
+
+    if (world.isEmergencyActive()) {
+
+        if (emergencyDeadline == 0) {
+            emergencyDeadline =
+                System.nanoTime() + 3_000_000_000L;
+        }
+
+        long remaining =
+            emergencyDeadline - System.nanoTime();
+
+        emergencyTimeLeft = (int) Math.max(
+            0,
+            (remaining + 999_999_999L) / 1_000_000_000L
+        );
+
+        if (remaining <= 0) {
+            world.failEmergency();
+            emergencyDeadline = 0;
+        }
+
+        repaint();
+
+    } else {
+        emergencyDeadline = 0;
+        emergencyTimeLeft = 3;
+    }
+});
+
+emergencyTimer.start();
+
        
 addKeyListener(new KeyAdapter() {
     @Override
     public void keyPressed(KeyEvent event) {
+        int code = event.getKeyCode();
 
+// Ignore key auto-repeat while held
+if (heldKeys.contains(code)) {
+    return;
+}
+
+// Multiple simultaneously held keys are rejected
+if (!heldKeys.isEmpty()) {
+    oneKeyWarningUntil =
+        System.nanoTime() + 1_000_000_000L;
+
+    repaint();
+    return;
+}
+
+heldKeys.add(code);
+if (world.isGameOver()) {
+    return;
+}
+
+if (world.isEmergencyActive()) {
+    world.handleEmergencyKey(event.getKeyChar());
+    repaint();
+    return;
+}
         // E = Exposure Mode
         if (event.getKeyCode() == KeyEvent.VK_E) {
             exposureMode = !exposureMode;
@@ -104,6 +188,10 @@ if (event.getKeyCode() == KeyEvent.VK_B) {
 
         handleRescueKey(pressedKey);
     }
+    @Override
+public void keyReleased(KeyEvent event) {
+    heldKeys.remove(event.getKeyCode());
+}
 });
     }
 
@@ -122,6 +210,62 @@ if (event.getKeyCode() == KeyEvent.VK_B) {
 
         // Draw statistics
         drawHud(g2d);
+        if (world.isEmergencyActive()) {
+    drawEmergencyOverlay(g2d);
+} if (world.isGameOver()) {
+    drawGameOverOverlay(g2d);
+} 
+if (overloadWarning
+        && !world.isGameOver()
+        && !world.isEmergencyActive()) {
+
+    g2d.setColor(new Color(180, 0, 0, 220));
+
+    int boxWidth = 540;
+    int boxHeight = 110;
+    int x = (getWidth() - boxWidth) / 2;
+    int y = 200;
+
+    g2d.fillRoundRect(
+        x, y, boxWidth, boxHeight, 20, 20
+    );
+
+    g2d.setColor(Color.WHITE);
+    g2d.setFont(new java.awt.Font(
+        "SansSerif", java.awt.Font.BOLD, 26
+    ));
+
+    g2d.drawString(
+        "RESCUE SYSTEM OVERLOADED!",
+        x + 32, y + 42
+    );
+
+    g2d.setFont(new java.awt.Font(
+        "SansSerif", java.awt.Font.BOLD, 22
+    ));
+
+    g2d.drawString(
+        "FREE A KEY: " + overloadTimeLeft + "s",
+        x + 150, y + 82
+    );
+}
+
+if (!world.isGameOver()
+        && System.nanoTime() < oneKeyWarningUntil) {
+
+    g2d.setColor(new Color(200, 20, 20));
+    g2d.setFont(new java.awt.Font(
+        "SansSerif", java.awt.Font.BOLD, 28
+    ));
+
+    String warning = "PRESS ONE KEY AT A TIME!";
+
+    int x = (
+        getWidth() - g2d.getFontMetrics().stringWidth(warning)
+    ) / 2;
+
+    g2d.drawString(warning, x, 130);
+}
         totalEntities = 0;
     }
 
@@ -163,7 +307,18 @@ if (event.getKeyCode() == KeyEvent.VK_B) {
     }
 
     private void drawHud(Graphics2D g) {
+g.setColor(Color.BLACK);
 
+g.drawString(
+    "Outbreak Stage: " + world.getOutbreakStage(),
+    1080, 625
+);
+
+g.drawString(
+    "Rescue Keys: " + rescueKeys.size()
+        + "/" + AVAILABLE_KEYS.length(),
+    1050, 755
+);
 g.drawString(
     "Selected Strategy: " + world.getCureStrategyName(),
     650, 755
@@ -173,6 +328,9 @@ g.drawString(
         // HUD background directly below the 600px simulation grid
         g.setColor(new Color(250, 250, 250));
         g.fillRect(0, 600, getWidth(), 180);
+        g.setFont(new java.awt.Font(
+    "SansSerif", java.awt.Font.PLAIN, 13
+));
 
         g.setColor(Color.BLACK);
 
@@ -203,7 +361,22 @@ g.drawString(
 g.drawString(
     "Defenders: " + stats.getOrDefault(cellState.DEFENDER, 0L),
     1050, 685
+); 
+java.awt.Font originalFont = g.getFont();
+
+g.setColor(Color.BLACK);
+g.setFont(new java.awt.Font(
+    "SansSerif", java.awt.Font.BOLD, 18
+));
+
+g.drawString(
+    "SCORE: " + world.getScore(),
+    1050, 660
 );
+
+// Restore font so other HUD labels stay normal
+g.setFont(originalFont);
+
         g.drawString(
                 "Infectivity: " + (int) (world.getInfectionChance() * 100) + "%",
                 270, 625
@@ -383,6 +556,59 @@ g.drawString(
         }
     }
 
+private void drawEmergencyOverlay(Graphics2D g) {
+    g.setColor(new Color(70, 0, 0, 220));
+    g.fillRect(0, 0, getWidth(), getHeight());
+
+    g.setColor(Color.WHITE);
+    g.setFont(g.getFont().deriveFont(32f));
+    g.drawString("CRITICAL EMERGENCY!", 380, 250);
+
+    String sequence = world.getEmergencySequence();
+    int progress = world.getEmergencyProgress();
+
+    g.setFont(g.getFont().deriveFont(48f));
+
+    for (int i = 0; i < sequence.length(); i++) {
+        if (i < progress) {
+            g.setColor(Color.GREEN);
+        } else if (i == progress) {
+            g.setColor(Color.YELLOW);
+        } else {
+            g.setColor(Color.WHITE);
+        }
+
+        g.drawString(
+            String.valueOf(sequence.charAt(i)),
+            410 + i * 90,
+            360
+        );
+        
+    }
+
+    g.setColor(Color.WHITE);
+    g.setFont(g.getFont().deriveFont(18f));
+    g.drawString("Type the highlighted letters in order!", 400, 420);
+
+g.setColor(emergencyTimeLeft <= 2
+    ? Color.RED
+    : Color.YELLOW);
+
+g.setFont(g.getFont().deriveFont(
+    java.awt.Font.BOLD, 36f
+));
+
+String countdown = "TIME LEFT: " + emergencyTimeLeft + "s";
+
+int textX = (
+    getWidth() - g.getFontMetrics().stringWidth(countdown)
+) / 2;
+
+g.drawString(countdown, textX, 490);
+
+}
+
+
     private void drawSection(Graphics2D g, section section) {
         int sectionX = (int) section.getX();
         int sectionY = (int) section.getY();
@@ -416,11 +642,22 @@ g.drawString(
                         + section.getY() + "-"
                         + row + "-" + col;
 
-                if (infectedCount == 0) {
-                    rescueKeys.remove(cellId);
-                }
+                boolean hasRescuableInfected = false;
+
+for (Entity entity : gridCell.getEntities()) {
+    if (entity.getState() == cellState.INFECTED
+            && entity.isRescueAvailable()) {
+        hasRescuableInfected = true;
+        break;
+    }
+}
+
+if (!hasRescuableInfected) {
+    rescueKeys.remove(cellId);
+}
                 // Choose cell colour
-                if (scoreboardCell) {
+                 
+                    if (scoreboardCell) {
                     g.setColor(new Color(190, 150, 100)); // Brown scoreboard
                 } else if (totalCount == 0) {
                     g.setColor(new Color(240, 240, 240)); // Empty
@@ -437,7 +674,7 @@ g.drawString(
                 } else {
                     g.setColor(new Color(240, 240, 240));
                 }
-
+            
                 // Actually paint the cell
                 g.fillRect(x, y, cellWidth, cellHeight);
 
@@ -446,19 +683,19 @@ g.drawString(
                 g.setStroke(new BasicStroke(1));
                 g.drawRect(x, y, cellWidth, cellHeight);
                 // Show rescue key and countdown for infected gameplay cells
-                if (!scoreboardCell && infectedCount > 0) {
-
+                if (!scoreboardCell && hasRescuableInfected){
                     char rescueKey = getRescueKey(section, row, col);
 
                     // Find an infected entity in this cell
                     Entity infectedEntity = null;
 
                     for (Entity entity : gridCell.getEntities()) {
-                        if (entity.getState() == cellState.INFECTED) {
-                            infectedEntity = entity;
-                            break;
-                        }
-                    }
+    if (entity.getState() == cellState.INFECTED
+            && entity.isRescueAvailable()) {
+        infectedEntity = entity;
+        break;
+    }
+}
 
                     if (infectedEntity != null) {
 
@@ -499,4 +736,346 @@ g.drawString(
         g.drawString("Defenders: " + section.getTotalDefenderCount(), statsX, statsY + 33);
         g.drawString("Dead: " + section.getTotalDeadCount(), statsX, statsY + 44);
     }
+
+private void drawGameOverOverlay(Graphics2D g) {
+
+    if (gameOverAnimationStart == 0) {
+        gameOverAnimationStart = System.nanoTime();
+    }
+
+    double seconds = (System.nanoTime()
+        - gameOverAnimationStart) / 1_000_000_000.0;
+
+    int width = getWidth();
+    int height = getHeight();
+
+    // Red game-over background
+    g.setColor(new Color(100, 0, 0));
+    g.fillRect(0, 0, width, height);
+
+    // Pulsing red background
+    int pulse = (int) (20 + 15 * Math.sin(seconds * 4));
+    g.setColor(new Color(160, 0, 0, pulse));
+    g.fillOval(
+        width / 2 - 300,
+        height / 2 - 300,
+        600, 600
+    );
+
+    // Game-over heading
+    g.setFont(new java.awt.Font(
+        "SansSerif", java.awt.Font.BOLD, 65
+    ));
+    g.setColor(Color.WHITE);
+
+    String title = "GAME OVER";
+    int titleX = (width - g.getFontMetrics()
+        .stringWidth(title)) / 2;
+
+    g.drawString(title, titleX, 145);
+
+    // Zombies walk toward centre for 2.5 seconds
+    double progress = Math.min(1.0, seconds / 2.5);
+
+    int center = width / 2;
+    int groundY = height / 2 + 150;
+
+    int[] startX = {-120, width + 120, -200};
+    int[] endX = {center - 170, center + 170, center};
+
+    for (int i = 0; i < 3; i++) {
+
+        int zombieX = (int) (
+            startX[i] + (endX[i] - startX[i]) * progress
+        );
+
+        boolean dancing = seconds >= 2.5;
+
+        drawZombie(
+            g,
+            zombieX,
+            groundY,
+            seconds,
+            dancing,
+            i
+        );
+    }
+
+    // Text after walking finishes
+    if (seconds >= 2.5) {
+
+        g.setColor(Color.YELLOW);
+        g.setFont(new java.awt.Font(
+            "SansSerif", java.awt.Font.BOLD, 38
+        ));
+
+        String laugh = "HA! HA! HA!";
+        int laughX = (width - g.getFontMetrics()
+            .stringWidth(laugh)) / 2;
+
+        g.drawString(laugh, laughX, height - 105);
+    }
+
+    g.setColor(Color.WHITE);
+    g.setFont(new java.awt.Font(
+        "SansSerif", java.awt.Font.PLAIN, 19
+    ));
+
+    String subtitle = "The zombies have taken over!";
+    int subtitleX = (width - g.getFontMetrics()
+        .stringWidth(subtitle)) / 2;
+
+    g.drawString(subtitle, subtitleX, height - 50);
 }
+
+private void drawZombie(
+        Graphics2D g,
+        int x,
+        int y,
+        double time,
+        boolean dancing,
+        int index) {
+
+    Graphics2D z = (Graphics2D) g.create();
+
+    // Walking or dancing movement
+    double movement = Math.sin(time * 12 + index * 2);
+
+    int bounce = dancing
+        ? (int) (Math.abs(movement) * 22)
+        : (int) (Math.abs(movement) * 7);
+
+    z.translate(x, y - bounce);
+
+    // Zombie colours
+    Color skin = new Color(95, 165, 85);
+    Color shirt = new Color(65, 75, 115);
+
+    if (index == 1) {
+        skin = new Color(140, 175, 90);
+        shirt = new Color(115, 65, 75);
+    } else if (index == 2) {
+        skin = new Color(85, 145, 125);
+        shirt = new Color(90, 70, 125);
+    }
+
+    z.setStroke(new BasicStroke(
+        8, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND
+    ));
+
+    // Legs
+    z.setColor(new Color(45, 45, 65));
+
+    int legSwing = (int) (movement * 20);
+
+    z.drawLine(-16, 20, -20 - legSwing, 75);
+    z.drawLine(16, 20, 20 + legSwing, 75);
+
+    // Body
+    z.setColor(shirt);
+    z.fillRoundRect(-34, -85, 68, 110, 14, 14);
+
+    // Dancing arms wave more dramatically
+    int armSwing = dancing
+        ? (int) (movement * 35)
+        : 10;
+
+    z.setColor(skin);
+
+    z.drawLine(-30, -65, -65, -30 - armSwing);
+    z.drawLine(30, -65, 65, -30 + armSwing);
+
+    // Head
+    z.setColor(skin);
+    z.fillOval(-37, -155, 74, 75);
+
+    // Eyes
+    z.setColor(Color.WHITE);
+    z.fillOval(-24, -130, 18, 19);
+    z.fillOval(8, -130, 18, 19);
+
+    // Red pupils
+    z.setColor(Color.RED);
+    z.fillOval(-18, -124, 9, 10);
+    z.fillOval(14, -124, 9, 10);
+
+    // Zombie mouth
+    z.setColor(new Color(45, 20, 20));
+    z.fillRoundRect(-19, -105, 38, 15, 8, 8);
+
+    // Teeth
+    z.setColor(Color.WHITE);
+
+    for (int tooth = -12; tooth <= 12; tooth += 12) {
+        z.fillRect(tooth, -104, 5, 7);
+    }
+
+    z.dispose();
+}
+
+private void updateGameAudio() {
+
+    String nextPhase;
+
+    if (world.isGameOver()) {
+        nextPhase = "GAME_OVER";
+
+    } else if (world.isEmergencyActive()) {
+        nextPhase = "EMERGENCY";
+
+    } else if (!world.hasStarted()) {
+        nextPhase = "WAITING";
+
+    } else {
+        nextPhase = "NORMAL";
+    }
+
+    // Only change audio when game state changes
+    if (!nextPhase.equals(audioPhase)) {
+
+        audioPhase = nextPhase;
+
+        switch (nextPhase) {
+
+            case "WAITING":
+                // No music before player starts the game
+                audio.stopAll();
+                break;
+
+            case "NORMAL":
+                // Starts after selecting a section,
+                // or resumes after surviving an emergency
+                audio.playNormal();
+                gameOverSoundStart = 0;
+                laughPlayed = false;
+                break;
+
+            case "EMERGENCY":
+                // Stop normal music and play emergency audio
+                audio.playEmergency();
+                break;
+
+            case "GAME_OVER":
+                // Stop emergency music immediately
+                audio.playGameOver();
+
+                // Start delay before zombie laughter
+                gameOverSoundStart = System.nanoTime();
+                laughPlayed = false;
+                break;
+        }
+    }
+
+    // Play laughter once, after zombies finish walking
+    if (world.isGameOver()
+            && !laughPlayed
+            && gameOverSoundStart != 0) {
+
+        double elapsedSeconds =
+            (System.nanoTime() - gameOverSoundStart)
+            / 1_000_000_000.0;
+
+        if (elapsedSeconds >= 2.5) {
+            audio.playLaugh();
+            laughPlayed = true;
+        }
+    }
+}
+
+private void updateRescueKeyCapacity() {
+
+    if (!world.hasStarted() || world.isGameOver()
+            || world.isEmergencyActive()) {
+        return;
+    }
+
+    java.util.Set<String> activeCells =
+        new java.util.HashSet<>();
+
+    for (section area : world.getSections()) {
+        for (int row = 0; row < area.getGridRows(); row++) {
+            for (int col = 0; col < area.getGridCols(); col++) {
+
+                // Scoreboard is not a rescue cell
+                if (row == 0 && col == 0) {
+                    continue;
+                }
+
+                GridCell<Entity> cell = area.getGridCell(row, col);
+                if (cell == null) continue;
+
+                boolean eligible = false;
+
+                for (Entity entity : cell.getEntities()) {
+                    if (entity.getState() == cellState.INFECTED
+                            && entity.isRescueAvailable()) {
+                        eligible = true;
+                        break;
+                    }
+                }
+
+                if (eligible) {
+                    String cellId = area.getX() + "-"
+                        + area.getY() + "-"
+                        + row + "-" + col;
+
+                    activeCells.add(cellId);
+                }
+            }
+        }
+    }
+
+    // Release keys belonging to cells no longer eligible
+    rescueKeys.keySet().retainAll(activeCells);
+
+    // Assign available keys to eligible cells
+    for (section area : world.getSections()) {
+        for (int row = 0; row < area.getGridRows(); row++) {
+            for (int col = 0; col < area.getGridCols(); col++) {
+
+                String cellId = area.getX() + "-"
+                    + area.getY() + "-"
+                    + row + "-" + col;
+
+                if (activeCells.contains(cellId)
+                        && !rescueKeys.containsKey(cellId)) {
+                    getRescueKey(area, row, col);
+                }
+            }
+        }
+    }
+
+    // All available rescue keys have been allocated
+ 
+if (rescueKeys.size() >= AVAILABLE_KEYS.length()) {
+
+    if (!overloadWarning) {
+        overloadWarning = true;
+        overloadDeadline =
+            System.nanoTime() + 5_000_000_000L;
+    }
+
+    long remaining =
+        overloadDeadline - System.nanoTime();
+
+    overloadTimeLeft = (int) Math.max(
+        0,
+        (remaining + 999_999_999L) / 1_000_000_000L
+    );
+
+    if (remaining <= 0) {
+        world.endGameDueToOverload();
+        overloadWarning = false;
+        overloadDeadline = 0;
+    }
+
+} else {
+    // Player freed a rescue key, cancel overload
+    overloadWarning = false;
+    overloadDeadline = 0;
+    overloadTimeLeft = 5;
+}
+
+    }
+}
+

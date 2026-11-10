@@ -37,7 +37,8 @@ public class Entity {
         if (state == cellState.HEALTHY) {
             state = cellState.INFECTED;
             infectionCountdown = 10;
-        }
+            
+        }rescueAvailable = true;
     }
 
     public void updateInfectionCountdown() {

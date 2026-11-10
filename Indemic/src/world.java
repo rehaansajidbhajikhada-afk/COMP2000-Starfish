@@ -9,6 +9,35 @@ public class world {
     private section[][] sectionGrid;
     private int infectionThreshold = 10;
     private double infectionChance = 0.3;
+    private int lastEmergencyTick = -999;
+    private int score = 0;
+
+public int getScore() {
+    return score;
+}
+
+private void awardRescuePoints(int rescued) {
+    if (rescued > 0) {
+        score += rescued * 10;
+    }
+}
+    private int outbreakStage = 0;
+
+public int getOutbreakStage() {
+    return outbreakStage;
+}
+
+public double getInfectedPercentage() {
+    int total = sections.stream()
+        .mapToInt(s -> s.getTotalEntityCount())
+        .sum();
+
+    if (total == 0) {
+        return 0;
+    }
+
+    return 100.0 * getWorldInfectedCount() / total;
+}
     private int dnaPoints;
     private int ticks;
     private section startingSection;
@@ -17,6 +46,26 @@ public class world {
     private CureStrategy cureStrategy = new UrgentCureStrategy();
 private static final int AUTO_RESCUE_DNA_COST = 2;
 private final PowerMeter powerMeter = new PowerMeter();
+private boolean emergencyActive = false;
+private boolean gameOver = false;
+private String emergencySequence = "";
+private int emergencyProgress = 0;
+
+public boolean isEmergencyActive() {
+    return emergencyActive;
+}
+
+public boolean isGameOver() {
+    return gameOver;
+}
+
+public String getEmergencySequence() {
+    return emergencySequence;
+}
+
+public int getEmergencyProgress() {
+    return emergencyProgress;
+}
 
 public PowerMeter getPowerMeter() {
     return powerMeter;
@@ -108,8 +157,56 @@ public PowerMeter getPowerMeter() {
                     spreadToAdjacentSection(row, col, 1, 0);  // Right
                 }
             }
-        }
+        } updateOutbreakStage();
+        // Repeat emergency every 6 simulation ticks
+// while a significant outbreak is still active.
+if (outbreakStage >= 2
+        && getInfectedPercentage() >= 40
+        && !emergencyActive
+        && !gameOver
+        && ticks - lastEmergencyTick >= 6) {
+
+    startEmergency();
+}
     }
+    
+
+private void updateOutbreakStage() {
+
+    double infectedPercent = getInfectedPercentage();
+
+    int nextStage = outbreakStage;
+
+    if (infectedPercent >= 60 && outbreakStage < 2) {
+        nextStage = 2;
+    } else if (infectedPercent >= 40 && outbreakStage < 1) {
+        nextStage = 1;
+    }
+
+    if (nextStage == outbreakStage) {
+        return;
+    }
+
+    int stagesGained = nextStage - outbreakStage;
+    outbreakStage = nextStage;
+
+    infectionChance = Math.min(
+        0.8,
+        infectionChance + (0.10 * stagesGained)
+    );
+
+    for (section area : sections) {
+        area.setInfectionChance(infectionChance);
+    }
+
+    if (outbreakStage == 1) {
+        statusMessage = "WARNING: Virus mutation detected!";
+    } else {
+        statusMessage = "CRITICAL OUTBREAK! Emergency event incoming!";
+         startEmergency();
+    }
+}
+
 
     private void spreadToAdjacentSection(int currentRow, int currentCol, int dRow, int dCol) {
         int newRow = currentRow + dRow;
@@ -264,6 +361,7 @@ public boolean autoRescue() {
     }
 
     dnaPoints -= AUTO_RESCUE_DNA_COST;
+    awardRescuePoints(1);
     statusMessage = "Auto rescue using "
         + cureStrategy.name() + " (-2 DNA)";
 
@@ -314,7 +412,7 @@ public boolean activateBooster() {
     }
 
     powerMeter.consume();
-
+awardRescuePoints(rescued);
     statusMessage = "POWER BOOSTER! Rescued " + rescued + " entities";
     return true;
 }
@@ -349,6 +447,7 @@ private int countInfectedNeighbours(section area, int row, int col) {
 
         for (Entity entity : cell.getEntities()) {
             if (entity.rescue()) {
+                 awardRescuePoints(1);
                 statusMessage = "Infected entity rescued!";
                 return true;
             }
@@ -357,4 +456,120 @@ private int countInfectedNeighbours(section area, int row, int col) {
         statusMessage = "No infected entity available in this cell";
         return false;
     }
+
+public void startEmergency() {
+    if (emergencyActive || gameOver) {
+        return;
+    }
+
+    // Random emergency keys; no fixed sequence
+    String letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    StringBuilder sequence = new StringBuilder();
+
+    // Generate 5 different random letters
+    while (sequence.length() < 5) {
+        char next = letters.charAt(random.nextInt(letters.length()));
+
+        if (sequence.indexOf(String.valueOf(next)) == -1) {
+            sequence.append(next);
+        }
+    }
+
+    emergencySequence = sequence.toString();
+    emergencyProgress = 0;
+    emergencyActive = true;
+lastEmergencyTick = ticks; 
+    statusMessage = "EMERGENCY! Type all 5 letters in order!";
+}
+
+public void handleEmergencyKey(char key) {
+    if (!emergencyActive || gameOver) {
+        return;
+    }
+
+    // Ignore modifier and control keys
+    if (!Character.isLetter(key)) {
+        return;
+    }
+
+    char pressed = Character.toUpperCase(key);
+    char expected = emergencySequence.charAt(emergencyProgress);
+
+    // One wrong letter = instant defeat
+    if (pressed != expected) {
+        failEmergency();
+        return;
+    }
+
+    // Correct letter: advance to next
+    emergencyProgress++;
+
+    // Only cure after ALL 5 letters are correct
+    if (emergencyProgress == emergencySequence.length()) {
+        completeEmergency();
+        
+    } 
+    
+}
+public void endGameDueToOverload() {
+    if (gameOver) {
+        return;
+    }
+
+    gameOver = true;
+    emergencyActive = false;
+
+    statusMessage =
+        "GAME OVER! Rescue keyboard overwhelmed!";
+}
+
+
+
+
+private void completeEmergency() {
+
+    emergencyActive = false;
+
+    int rescued = 0;
+
+    for (section area : sections) {
+        for (int row = 0; row < area.getGridRows(); row++) {
+            for (int col = 0; col < area.getGridCols(); col++) {
+
+                GridCell<Entity> cell =
+                    area.getGridCell(row, col);
+
+                if (cell == null) {
+                    continue;
+                }
+
+                for (Entity entity : cell.getEntities()) {
+                    if (entity.rescue()) {
+                        rescued++;
+                    }
+                }
+            }
+        }
+    }
+
+    // Each successful rescue gives 10 points
+    awardRescuePoints(rescued);
+
+    statusMessage =
+        "EMERGENCY SURVIVED! Rescued " + rescued
+        + " entities! +" + (rescued * 10) + " points";
+}
+
+public void failEmergency() {
+
+    if (gameOver) {
+        return;
+    }
+
+    emergencyActive = false;
+    gameOver = true;
+
+    statusMessage = "GAME OVER! Emergency failed!";
+}
+
 }
