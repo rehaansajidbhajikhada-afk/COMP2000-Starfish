@@ -3,6 +3,7 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class simulationLoop {
+
     private final world world;
     private final JPanel panel;
     private Timer timer;
@@ -16,11 +17,13 @@ public class simulationLoop {
         if (timer != null && timer.isRunning()) {
             return;
         }
-
-        timer = new Timer(5000, event -> {
-            world.tick();
-            panel.repaint();
-        });
+timer = new Timer(5000, event -> {
+    if (!world.isEmergencyActive() && !world.isGameOver()) {
+        world.tick();
+    }
+    panel.repaint();
+});
+        
         timer.start();
     }
 
